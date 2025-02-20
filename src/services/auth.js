@@ -111,8 +111,8 @@ export const requestResetPasswordEmail = async (email) => {
   );
 
   const resetPasswordLink = `${getEnvVar(
-    'FRONTEND_DOMAIN',
-  )}/reset-password?token=${resetToken}`;
+    'APP_DOMAIN',
+  )}/auth/reset-password?token=${resetToken}`;
   console.log(resetPasswordLink);
   const template = Handlebars.compile(resetPasswordEmailTemplate);
   const html = template({
