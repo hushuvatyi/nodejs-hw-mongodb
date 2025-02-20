@@ -1,6 +1,6 @@
 import createHttpError from 'http-errors';
 import {
-  createContat,
+  createContact,
   deleteContact,
   getAllContacts,
   getContactById,
@@ -9,6 +9,7 @@ import {
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import { getUrlToSavedPhoto } from '../utils/getUrlToSavedPhoto.js';
 
 export const getAllContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
@@ -59,7 +60,14 @@ export const deleteContactController = async (req, res) => {
 };
 
 export const createContatController = async (req, res) => {
-  const contact = await createContat(req.body, req.user._id);
+  const photo = req.file;
+
+  const photoUrl = await getUrlToSavedPhoto(photo);
+
+  const contact = await createContact(
+    { ...req.body, photo: photoUrl },
+    req.user._id,
+  );
   // contact.userId = req.user._id;
   res.status(201).json({
     status: 201,
@@ -70,7 +78,14 @@ export const createContatController = async (req, res) => {
 
 export const updateContactController = async (req, res, next) => {
   const { contactId } = req.params;
-  const result = await updateContact(contactId, req.user._id, req.body);
+  const photo = req.file;
+
+  const photoUrl = getUrlToSavedPhoto(photo);
+
+  const result = await updateContact(contactId, req.user._id, {
+    ...req.body,
+    photo: photoUrl,
+  });
 
   if (!result) {
     next(createHttpError(404, 'Contact not found'));

@@ -6,7 +6,19 @@ import { SessionsCollection } from '../db/models/session.js';
 import {
   ACCESS_TOKEN_LIVE_TIME,
   REFRESH_TOKEN_LIVE_TIME,
+  SMTP,
+  TEMPLATES_DIR,
 } from '../constants/index.js';
+import { getEnvVar } from '../utils/getEnvVar.js';
+import jwt from 'jsonwebtoken';
+import { sendEmail } from '../utils/sendEmail.js';
+import Handlebars from 'handlebars';
+import path from 'node:path';
+import fs from 'node:fs';
+
+const resetPasswordEmailTemplate = fs
+  .readFileSync(path.join(TEMPLATES_DIR, 'reset-password-email.html'))
+  .toString();
 
 const setSessionValues = () => ({
   accessToken: crypto.randomBytes(20).toString('base64'),
@@ -80,5 +92,65 @@ export const logoutUser = async ({ sessionId, sessionToken }) => {
   await SessionsCollection.deleteOne({
     _id: sessionId,
     refreshToken: sessionToken,
+  });
+};
+
+export const requestResetPasswordEmail = async (email) => {
+  const user = await UsersCollection.findOne({ email });
+  if (!user) throw createHttpError(404, 'User not found');
+
+  const resetToken = jwt.sign(
+    {
+      sub: user._id,
+      email,
+    },
+    getEnvVar('JWT_SECRET'),
+    {
+      expiresIn: '5m',
+    },
+  );
+
+  const resetPasswordLink = `${getEnvVar(
+    'FRONTEND_DOMAIN',
+  )}/reset-password?token=${resetToken}`;
+  console.log(resetPasswordLink);
+  const template = Handlebars.compile(resetPasswordEmailTemplate);
+  const html = template({
+    name: user.name,
+    link: resetPasswordLink,
+  });
+
+  try {
+    await sendEmail({
+      from: getEnvVar(SMTP.SMTP_FROM),
+      to: email,
+      subject: 'Reset your password',
+      html: html,
+    });
+  } catch (err) {
+    console.error(err);
+    throw createHttpError(
+      500,
+      'Failed to send the email, please try again later.',
+    );
+  }
+};
+
+export const resetPassword = async ({ password, token }) => {
+  let payload;
+  try {
+    payload = jwt.verify(token, getEnvVar('JWT_SECRET'));
+  } catch (err) {
+    console.error(err);
+    throw createHttpError(401, 'Token is expired or invalid');
+  }
+  const user = await UsersCollection.findById(payload.sub);
+
+  if (!user) throw createHttpError(404, 'User not found');
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await UsersCollection.findByIdAndUpdate(user._id, {
+    password: hashedPassword,
   });
 };

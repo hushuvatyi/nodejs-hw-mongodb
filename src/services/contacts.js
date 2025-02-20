@@ -1,4 +1,3 @@
-// import { SORT_ORDER } from '../constants/index.js';
 import { ContactsCollection } from '../db/models/contact.js';
 import { calculatePaginationData } from '../utils/calculatePaginationData.js';
 
@@ -59,10 +58,11 @@ export const deleteContact = async (contactId, userId) => {
   return contact;
 };
 
-export const createContat = async (payload, userId) => {
+export const createContact = async ({ photo, ...payload }, userId) => {
   const contact = await ContactsCollection.create({
     ...payload,
     userId: userId,
+    photo: photo,
   });
 
   return contact;
@@ -71,12 +71,12 @@ export const createContat = async (payload, userId) => {
 export const updateContact = async (
   contactId,
   userId,
-  payload,
+  { photo, ...payload },
   options = {},
 ) => {
   const rawResult = await ContactsCollection.findOneAndUpdate(
     { _id: contactId, userId: userId },
-    payload,
+    { ...payload, ...(photo ? { photo: photo } : {}) },
     {
       new: true,
       includeResultMetadata: true,
