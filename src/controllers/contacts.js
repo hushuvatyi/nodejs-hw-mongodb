@@ -80,7 +80,7 @@ export const updateContactController = async (req, res, next) => {
   const { contactId } = req.params;
   const photo = req.file;
 
-  const photoUrl = getUrlToSavedPhoto(photo);
+  const photoUrl = await getUrlToSavedPhoto(photo);
 
   const result = await updateContact(contactId, req.user._id, {
     ...req.body,
