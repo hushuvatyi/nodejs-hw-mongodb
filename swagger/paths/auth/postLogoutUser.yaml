@@ -1,0 +1,13 @@
+tags:
+  - Auth
+summary: Logout user
+operationId: logoutUser
+description: Logout user with session's data in cookies
+security: []
+
+responses:
+  '204':
+    description: Successfully logged out an user, no content
+    content: {}
+  '404':
+    $ref: ../../components/responses/404.yaml

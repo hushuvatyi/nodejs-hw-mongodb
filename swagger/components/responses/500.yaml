@@ -1,0 +1,26 @@
+description: Internal server error
+content:
+  application/json:
+    schema:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          example: 500
+        message:
+          type: string
+          example: Something went wrong
+          description: Common error message
+        data:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              description: Detail message about error
+              example: Failed to send the email, please try again later
